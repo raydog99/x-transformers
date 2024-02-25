@@ -1,0 +1,4 @@
+(library
+ (name ViT
+  (public_name ViT)
+  (libraries base torch model_config training_config attention feedforward encoder decoder)))
