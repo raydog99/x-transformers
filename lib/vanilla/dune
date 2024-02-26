@@ -1,4 +1,4 @@
 (library
  (name vanilla
   (public_name vanilla)
-  (libraries base torch model_config training_config attention feedforward encoder decoder)))
+  (libraries base torch model_config training_config attention feedforward encoder decoder flash_attention)))
