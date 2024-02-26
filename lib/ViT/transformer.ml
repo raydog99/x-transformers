@@ -12,6 +12,7 @@ module Transformer = struct
           layer_norm_epsilon; residual_dropout; embedding_dropout; attention_dropout } = modelConfig in
     let encoderStack = Encoder.create ~vs:(Var_store.vs( / Int.to_string layer_idx) ~config) in
     let decoderStack = Decoder.create ~vs:(Var_store.vs( / Int.to_string layer_idx) ~config) in
+    let patchEmbedding = PatchEmbedding.create ~vs:(Var_store.vs( / num_patches patch_dim)) in
     {device = vs.device; config; attention_layer; positional_encoding; layers }
 ;;
 
