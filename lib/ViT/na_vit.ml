@@ -49,3 +49,20 @@ module NaViT = struct
       patch_embedding; positional_embedding; transformer;
       attn_pool_queries; attn_pool; to_latent; mlp_head }
   ;;
+
+  let forward t input_images ~group_images ~group_max_seq_len =
+    let p, c, device, has_token_dropout =
+      t.patch_embedding.patch_size, t.patch_embedding.channels, t.device, Option.is_some t.model_config.calc_token_dropout in
+
+    let arange = Torch.arange1 ~device in
+    let pad_sequence = Torch.nn.functional.pad_sequence ~batch_first:true in
+
+    let batched_images =
+      if group_images then
+        group_images_by_max_seq_len
+          input_images
+          ~patch_size:p
+          ~calc_token_dropout:t.model_config.calc_token_dropout
+          ~max_seq_len:group_max_seq_len
+      else
+        input_images
