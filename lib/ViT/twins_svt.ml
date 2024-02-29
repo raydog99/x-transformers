@@ -112,6 +112,18 @@ module TwinsSVT = struct
       [ s1_layer; s2_layer; s3_layer; s4_layer ]
     in
 
+    let final_layers =
+      Sequential.of_list
+        [ AdaptiveAvgPool2d.create ~output_size:[1; 1];
+          Rearrange.create ~pattern:"... () () -> ...";
+          Linear.create dim num_classes
+        ]
+    in
+
+    let network =
+      Sequential.of_list (layers @ [final_layers])
+    in
+
     forward network x
   ;;
 end

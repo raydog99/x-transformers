@@ -29,4 +29,6 @@ module TwinsSVT : sig
     peg_kernel_size:int ->
     dropout:float ->
     t
+
+  val forward : t -> input_images:Tensor.t -> Tensor.t
 end
