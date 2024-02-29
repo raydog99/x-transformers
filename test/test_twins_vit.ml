@@ -23,7 +23,20 @@ let evaluate_twins_model ~image_set_basename ~nbr_of_classes ~labels_names =
     let label_name = List.nth_exn label_names label_index in
 
     printf "label %d: %s\n" label_index label_name;
+
+    let dummy_input = Tensor.randn [||] in
+
+    let model_config = ModelConfig.create ~num_classes:nbr_of_classes in
+    let training_config = TrainingConfig.create () in
+    let twins_model = TwinsSVT.create ~num_classes:nbr_of_classes in
+
+    let output = TwinsSVT.forward twins_model dummy_input in
+
+    count_slides := !count_slides + 1;
   done
 
 let () =
-  let image_set_basename = "test_"
+  let image_set_basename = "test_" in
+  let nbr_of_classes = 10 in
+  let labels_names = "/Lung/Test_All512pxTiled/9_10mutations/label_names.txt" in
+  evaluate_twins_model ~image_set_basename ~nbr_of_classes ~labels_names
