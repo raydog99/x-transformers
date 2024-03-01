@@ -20,11 +20,42 @@ module MaxViT = struct
       ~dropout
       ~channels =
 
-    let conv_stem =
-      nn_sequential [
-        nn_conv2d ~stride:2 ~padding:1 ~kernel_size:3 channels dim_conv_stem;
-        nn_conv2d ~padding:1 ~kernel_size:3 dim_conv_stem dim_conv_stem;
-      ]
-    { conv_stem }
+    let num_stages = List.length depth in
+    let dims =
+      List.init num_stages ~f:(fun i -> Int.( * ) (1 lsl i) dim)
+      |> List.cons dim_conv_stem
+    in
+    let dim_pairs = List.zip_exn dims (List.tl_exn dims) in
+
+    let layers =
+      List.concat_mapi depth ~f:(fun ind (layer_dim_in, layer_dim) ->
+        List.init layer_dim ~f:(fun stage_ind ->
+          let is_first = stage_ind = 0 in
+          let stage_dim_in = if is_first then layer_dim_in else layer_dim in
+
+          let block =
+            nn_sequential [
+              MBConv.create
+                ~dim_in:stage_dim_in
+                ~dim_out:layer_dim
+                ~downsample:is_first
+                ~expansion_rate:mbconv_expansion_rate
+                ~shrinkage_rate:mbconv_shrinkage_rate
+                ~dropout;
+              Rearrange.create "b d (x w1) (y w2) -> b x y w1 w2 d" ~w1:window_size ~w2:window_size;
+              Residual.create (Attention.create ~dim:layer_dim ~dim_head ~dropout ~window_size);
+              Residual.create (FeedForward.create ~dim:layer_dim ~dropout);
+              Rearrange.create "b x y w1 w2 d -> b d (x w1) (y w2)";
+              Rearrange.create "b d (w1 x) (w2 y) -> b x y w1 w2 d" ~w1:window_size ~w2:window_size;
+              Residual.create (Attention.create ~dim:layer_dim ~dim_head ~dropout ~window_size);
+              Residual.create (FeedForward.create ~dim:layer_dim ~dropout);
+              Rearrange.create "b x y w1 w2 d -> b d (w1 x) (w2 y)";
+            ]
+          in
+          block
+        )
+      )
+    in
+    { conv_stem; layers }
   ;;
 end
