@@ -56,6 +56,15 @@ module MaxViT = struct
         )
       )
     in
-    { conv_stem; layers }
+
+    let mlp_head =
+      nn_sequential [
+        Reduce.create "b d h w -> b d" "mean";
+        nn_layer_norm dims.(num_stages);
+        nn_linear dims.(num_stages) ~output:num_classes;
+      ]
+    in
+
+    { conv_stem; layers; mlp_head }
   ;;
 end
