@@ -43,3 +43,42 @@ module IWSA = struct
     Tensor.transpose x ~dim1:2 ~dim2:3 |> Tensor.reshape4d ~size:[|B; C; H; W|] |> Tensor.permute ~dims:[|0; 3; 1; 2|]
   ;;
 end
+
+
+module SSA = struct
+  type t = {
+    dim: int;
+    num_heads: int;
+    scale: float;
+    q: Tensor.t;
+    reduction: Tensor.t;
+    norm_act: Tensor.t;
+    k: Tensor.t;
+    v: Tensor.t;
+    proj: Tensor.t;
+    attn_drop: Tensor.t -> Tensor.t;
+    proj_drop: Tensor.t -> Tensor.t;
+  }
+
+  let create ~vs ~dim ~num_heads ~qkv_bias ~qk_scale ~attn_drop ~proj_drop ~sr_ratio ~c_ratio =
+    let head_dim = dim / num_heads in
+    let scale = Option.value qk_scale ~default:(head_dim * c_ratio) ** (-0.5) in
+    let c_new = int_of_float (float_of_int dim * c_ratio) in
+    let q = Vs.linear vs dim c_new ~bias:qkv_bias in
+    let k = Vs.linear vs c_new c_new ~bias:qkv_bias in
+    let v = Vs.linear vs c_new dim ~bias:qkv_bias in
+    let proj = Vs.linear vs dim dim in
+    let attn_drop = Vs.dropout ~p:attn_drop in
+    let proj_drop = Vs.dropout ~p:proj_drop in
+    let reduction =
+      if sr_ratio > 1.0 then
+        let reduction_conv1 = Vs.conv2d vs dim dim ~kernel_size:sr_ratio ~stride:sr_ratio ~groups:dim in
+        let reduction_conv2 = Vs.conv2d vs dim c_new ~kernel_size:1 ~stride:1 in
+        let norm_act = Vs.apply Layer_norm [|reduction_conv1|] in
+        fun x -> Vs.apply reduction_conv2 [|Vs.apply norm_act [|x|]|]
+      else
+        fun x -> x
+    in
+    { dim; num_heads; scale; q; reduction; norm_act; k; v; proj; attn_drop; proj_drop }
+  ;;
+end
