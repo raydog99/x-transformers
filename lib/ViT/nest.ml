@@ -32,5 +32,20 @@ module NesT = struct
         nn_conv2d patch_dim layer_dims.(0) 1;
         LayerNorm layer_dims.(0);
       ]
-    { to_patch_embedding }
+    in
+    let block_repeats = cast_tuple block_repeats num_hierarchies in
+    let layers =
+      List.map3_exn
+        hierarchies
+        layer_heads
+        dim_pairs
+        block_repeats
+        ~f:(fun level heads (dim_in, dim_out) block_repeat ->
+          let is_last = level = 0 in
+          let depth = block_repeat in
+          let transformer = Transformer.create ~dim_in ~seq_len ~depth ~heads ~mlp_mult ~dropout () in
+          let aggregate = if not is_last then Aggregate.create ~dim:dim_in ~dim_out () else nn_identity () in
+          (transformer, aggregate))
+    in
+    { to_patch_embedding; layers }
 end
