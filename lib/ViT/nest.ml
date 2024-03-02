@@ -33,6 +33,7 @@ module NesT = struct
         LayerNorm layer_dims.(0);
       ]
     in
+
     let block_repeats = cast_tuple block_repeats num_hierarchies in
     let layers =
       List.map3_exn
@@ -47,5 +48,14 @@ module NesT = struct
           let aggregate = if not is_last then Aggregate.create ~dim:dim_in ~dim_out () else nn_identity () in
           (transformer, aggregate))
     in
-    { to_patch_embedding; layers }
+
+    let mlp_head =
+      nn_sequential [
+        LayerNorm last_dim;
+        Reduce ("b c h w -> b c", "mean");
+        nn_linear last_dim num_classes;
+      ]
+    in
+
+    { to_patch_embedding; layers; mlp_head }
 end
