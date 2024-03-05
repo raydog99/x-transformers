@@ -92,3 +92,9 @@ module ResBlock = struct
       ]
     in
     { net }
+
+  let forward resblock x =
+    let residual = x in
+    let x = forward_layers resblock.net x in
+    Tensor.add x residual
+  end
