@@ -84,6 +84,11 @@ module ResBlock = struct
       [
         Conv2d.conv2d ~ksize:3 ~padding:1 ~input_dim:chan ~output_dim:chan ();
         nn (GroupNorm.group_norm ~groups ~channels:chan ());
+        leaky_relu ();
+        Conv2d.conv2d ~ksize:3 ~padding:1 ~input_dim:chan ~output_dim:chan ();
+        nn (GroupNorm.group_norm ~groups ~channels:chan ());
+        leaky_relu ();
+        Conv2d.conv2d ~ksize:1 ~input_dim:chan ~output_dim:chan ();
       ]
     in
     { net }
