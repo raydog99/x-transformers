@@ -66,6 +66,12 @@ module ContinuousPositionBias = struct
       List.fold
         (List.range 0 layers)
         ~init:[ nn (Linear.linear ~input_dim:2 ~output_dim:dim ()); leaky_relu () ]
+        ~f:(fun acc _ ->
+          acc
+          @ [ nn (Linear.linear ~input_dim:dim ~output_dim:dim ()); leaky_relu () ])
+      @ [ nn (Linear.linear ~input_dim:dim ~output_dim:heads ()); ]
+    in
+    { net }
 end
 
 module ResBlock = struct
