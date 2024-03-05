@@ -42,7 +42,17 @@ module Discriminator = struct
           in
           layer :: acc)
       |> List.rev
-    { layers }
+    in
+    let dim = List.last_exn dims in
+    let to_logits =
+      nn
+        [
+          nn (Conv2d.conv2d ~ksize:1 ~input_dim:dim ~output_dim:dim ());
+          leaky_relu ();
+          nn (Conv2d.conv2d ~ksize:4 ~input_dim:dim ~output_dim:1 ());
+        ]
+    in
+    { layers; to_logits }
 end
 
 module ContinuousPositionBias = struct
