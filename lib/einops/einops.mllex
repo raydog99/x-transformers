@@ -1,0 +1,16 @@
+let rec lex buf =
+  let pos = Lexing.lexeme_start_p buf in
+  match Lexing.read_char buf with
+  | ' ' => classify (" ")
+  | ',' => classify ","
+  | '(' | ')' => classify (string_of_char (Lexing.read_char buf))
+  | '1' => classify "unitary_axis"
+  | '.' | '.'. '.' => classify "..."
+  | c when Char.is_alpha c =>
+      let name = Lexing.read_string buf in
+      classify ("named_axis," ^ name)
+  | _ ->
+      raise (Lexing.Unexpected (Lexing.lexeme_start_p buf, "Unexpected character"))
+
+  | exception Lexing.Eof ->
+      classify End_of_file
